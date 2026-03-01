@@ -1,30 +1,32 @@
-
 "use client";
 
 import { useState, useTransition } from "react";
-import { getPaginatedUsers } from "@/app/action"; // Adjust path if needed
+import { getPaginatedUsers } from "@/app/action"; 
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
-// Define the type based on what your Server Action returns
+// 1. Update the Type definition to include tablesImported
 type UserData = {
-  users: any[];
+  users: {
+    id: string;
+    name: string;
+    email: string;
+    createdAt: Date;
+    workflowCount: number;
+    tablesImported: number; // <-- Added this
+  }[];
   totalPages: number;
   currentPage: number;
   totalUsers: number;
 };
 
 export function UserDirectory({ initialData }: { initialData: UserData }) {
-  // Store the table data in local state
   const [data, setData] = useState<UserData>(initialData);
-  
-  // useTransition gives us a nice loading state without freezing the UI
   const [isPending, startTransition] = useTransition();
 
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > data.totalPages) return;
 
     startTransition(async () => {
-      // Fetch the new page directly from the Server Action
       const newData = await getPaginatedUsers(newPage, 10);
       setData(newData);
     });
@@ -32,7 +34,6 @@ export function UserDirectory({ initialData }: { initialData: UserData }) {
 
   return (
     <div className="rounded-xl border bg-card text-card-foreground shadow-sm relative">
-      {/* Optional: Add a subtle loading overlay when switching pages */}
       {isPending && (
         <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center rounded-xl backdrop-blur-sm">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -52,6 +53,8 @@ export function UserDirectory({ initialData }: { initialData: UserData }) {
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Email</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Signup Date</th>
+                {/* 2. Add the new Table Header */}
+                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">Tables Imported</th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Workflows Ran</th>
               </tr>
             </thead>
@@ -63,6 +66,12 @@ export function UserDirectory({ initialData }: { initialData: UserData }) {
                   <td className="p-4 align-middle text-muted-foreground">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
+                  {/* 3. Add the new Table Data Cell */}
+                  <td className="p-4 align-middle text-center">
+                    <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-emerald-700 font-semibold text-xs">
+                      {user.tablesImported}
+                    </span>
+                  </td>
                   <td className="p-4 align-middle text-right">
                     <span className="inline-flex items-center justify-center rounded-full bg-blue-100 px-2.5 py-0.5 text-blue-700 font-semibold text-xs">
                       {user.workflowCount}
@@ -72,14 +81,14 @@ export function UserDirectory({ initialData }: { initialData: UserData }) {
               ))}
               {data.users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-4 text-center text-muted-foreground">No users found.</td>
+                  <td colSpan={5} className="p-4 text-center text-muted-foreground">No users found.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
         
-        {/* Isolated Pagination Controls */}
+        {/* Pagination Controls */}
         <div className="flex items-center justify-between px-2">
           <div className="text-sm text-muted-foreground">
             Page {data.currentPage} of {data.totalPages || 1}

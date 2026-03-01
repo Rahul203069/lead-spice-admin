@@ -162,28 +162,31 @@ export async function getDailyUserSignups(days = 30) {
     .orderBy(sql`DATE(${user.createdAt})`);
 
   return data;
-}
+
 
 export async function getPaginatedUsers(page: number = 1, limit: number = 10) {
   const offset = (page - 1) * limit;
 
-  // 1. Fetch the paginated users with their job count
+  // 1. Fetch the paginated users with distinct counts
   const data = await db
     .select({
       id: user.id,
       name: user.name,
       email: user.email,
       createdAt: user.createdAt,
-      workflowCount: count(job.id),
+      // Use DISTINCT to prevent inflated counts when joining multiple tables
+      workflowCount: sql<number>`COUNT(DISTINCT ${job.id})`.mapWith(Number),
+      tablesImported: sql<number>`COUNT(DISTINCT ${project.id})`.mapWith(Number), 
     })
     .from(user)
     .leftJoin(job, eq(user.id, job.userId))
+    .leftJoin(project, eq(user.id, project.userId)) // <-- Join the project table
     .groupBy(user.id)
-    .orderBy(desc(user.createdAt)) // Newest users first
+    .orderBy(desc(user.createdAt)) 
     .limit(limit)
     .offset(offset);
 
-  // 2. Get the total count of users to calculate total pages
+  // 2. Get the total count of users
   const [{ total }] = await db.select({ total: count() }).from(user);
 
   return {
@@ -193,7 +196,6 @@ export async function getPaginatedUsers(page: number = 1, limit: number = 10) {
     totalUsers: total,
   };
 }
-
 export async function getDailySignIns(days = 30) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
