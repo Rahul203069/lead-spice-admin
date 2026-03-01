@@ -162,7 +162,7 @@ export async function getDailyUserSignups(days = 30) {
     .orderBy(sql`DATE(${user.createdAt})`);
 
   return data;
-
+}
 
 export async function getPaginatedUsers(page: number = 1, limit: number = 10) {
   const offset = (page - 1) * limit;
@@ -196,6 +196,7 @@ export async function getPaginatedUsers(page: number = 1, limit: number = 10) {
     totalUsers: total,
   };
 }
+
 export async function getDailySignIns(days = 30) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
